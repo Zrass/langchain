@@ -140,6 +140,10 @@ class ConfluenceLoader(BaseLoader):
     :param keep_newlines: Whether to keep the newlines format, defaults to
         False
     :type keep_newlines: bool
+    :param openai_api_key: The OpenAI API key, defaults to None
+    :type openai_api_key: str, optional
+    :param use_openai: Whether to use the OpenAI API, defaults to False
+    :type use_openai: bool
     :raises ValueError: Errors while validating input
     :raises ImportError: Required dependencies not installed.
     """
@@ -797,13 +801,15 @@ class ConfluenceLoader(BaseLoader):
         except ImportError:
             raise ImportError("`base64` package not found, please run `pip install base64`")
         try:
-            import cStringIO
+            from io import BytesIO
         except ImportError:
-            raise ImportError("`cStringIO` package not found, please run `pip install cStringIO`")
+            raise ImportError("`StringIO` package not found, please run `pip install cStringIO`")
 
-        buffer = cStringIO.StringIO()
-        image.save(buffer, format="JPEG")
+        buffer = BytesIO()
+        image.save(buffer, format="PNG")
         base64_image = base64.b64encode(buffer.getvalue())
+
+        base64_image_str = base64_image.decode('utf-8')
 
         headers = {
             "Content-Type": "application/json",
@@ -824,7 +830,7 @@ class ConfluenceLoader(BaseLoader):
                         {
                             "type": "image_url",
                             "image_url": {
-                                "url": f"data:image/jpeg;base64,{base64_image},", "detail": "high"
+                                "url": f"data:image/jpeg;base64,{base64_image_str},", "detail": "high"
                             }
                         }
                     ]
