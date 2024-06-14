@@ -145,33 +145,35 @@ class ConfluenceLoader(BaseLoader):
     """
 
     def __init__(
-        self,
-        url: str,
-        api_key: Optional[str] = None,
-        username: Optional[str] = None,
-        session: Optional[requests.Session] = None,
-        oauth2: Optional[dict] = None,
-        token: Optional[str] = None,
-        cloud: Optional[bool] = True,
-        number_of_retries: Optional[int] = 3,
-        min_retry_seconds: Optional[int] = 2,
-        max_retry_seconds: Optional[int] = 10,
-        confluence_kwargs: Optional[dict] = None,
-        *,
-        space_key: Optional[str] = None,
-        page_ids: Optional[List[str]] = None,
-        label: Optional[str] = None,
-        cql: Optional[str] = None,
-        include_restricted_content: bool = False,
-        include_archived_content: bool = False,
-        include_attachments: bool = False,
-        include_comments: bool = False,
-        content_format: ContentFormat = ContentFormat.STORAGE,
-        limit: Optional[int] = 50,
-        max_pages: Optional[int] = 1000,
-        ocr_languages: Optional[str] = None,
-        keep_markdown_format: bool = False,
-        keep_newlines: bool = False,
+            self,
+            url: str,
+            api_key: Optional[str] = None,
+            username: Optional[str] = None,
+            session: Optional[requests.Session] = None,
+            oauth2: Optional[dict] = None,
+            token: Optional[str] = None,
+            cloud: Optional[bool] = True,
+            number_of_retries: Optional[int] = 3,
+            min_retry_seconds: Optional[int] = 2,
+            max_retry_seconds: Optional[int] = 10,
+            confluence_kwargs: Optional[dict] = None,
+            *,
+            space_key: Optional[str] = None,
+            page_ids: Optional[List[str]] = None,
+            label: Optional[str] = None,
+            cql: Optional[str] = None,
+            include_restricted_content: bool = False,
+            include_archived_content: bool = False,
+            include_attachments: bool = False,
+            include_comments: bool = False,
+            content_format: ContentFormat = ContentFormat.STORAGE,
+            limit: Optional[int] = 50,
+            max_pages: Optional[int] = 1000,
+            ocr_languages: Optional[str] = None,
+            keep_markdown_format: bool = False,
+            keep_newlines: bool = False,
+            openai_api_key: Optional[str] = None,
+            use_openai: Optional[bool] = False,
     ):
         self.space_key = space_key
         self.page_ids = page_ids
@@ -187,6 +189,8 @@ class ConfluenceLoader(BaseLoader):
         self.ocr_languages = ocr_languages
         self.keep_markdown_format = keep_markdown_format
         self.keep_newlines = keep_newlines
+        self.openai_api_key = openai_api_key
+        self.use_openai = use_openai
 
         confluence_kwargs = confluence_kwargs or {}
         errors = ConfluenceLoader.validate_init_args(
@@ -233,12 +237,12 @@ class ConfluenceLoader(BaseLoader):
 
     @staticmethod
     def validate_init_args(
-        url: Optional[str] = None,
-        api_key: Optional[str] = None,
-        username: Optional[str] = None,
-        session: Optional[requests.Session] = None,
-        oauth2: Optional[dict] = None,
-        token: Optional[str] = None,
+            url: Optional[str] = None,
+            api_key: Optional[str] = None,
+            username: Optional[str] = None,
+            session: Optional[requests.Session] = None,
+            oauth2: Optional[dict] = None,
+            token: Optional[str] = None,
     ) -> Union[List, None]:
         """Validates proper combinations of init arguments"""
 
@@ -396,7 +400,7 @@ class ConfluenceLoader(BaseLoader):
         yield from self._lazy_load()
 
     def _search_content_by_cql(
-        self, cql: str, include_archived_spaces: Optional[bool] = None, **kwargs: Any
+            self, cql: str, include_archived_spaces: Optional[bool] = None, **kwargs: Any
     ) -> List[dict]:
         url = "rest/api/content/search"
 
@@ -455,21 +459,21 @@ class ConfluenceLoader(BaseLoader):
         restrictions = self.confluence.get_all_restrictions_for_content(page["id"])
 
         return (
-            page["status"] == "current"
-            and not restrictions["read"]["restrictions"]["user"]["results"]
-            and not restrictions["read"]["restrictions"]["group"]["results"]
+                page["status"] == "current"
+                and not restrictions["read"]["restrictions"]["user"]["results"]
+                and not restrictions["read"]["restrictions"]["group"]["results"]
         )
 
     def process_pages(
-        self,
-        pages: List[dict],
-        include_restricted_content: bool,
-        include_attachments: bool,
-        include_comments: bool,
-        content_format: ContentFormat,
-        ocr_languages: Optional[str] = None,
-        keep_markdown_format: Optional[bool] = False,
-        keep_newlines: bool = False,
+            self,
+            pages: List[dict],
+            include_restricted_content: bool,
+            include_attachments: bool,
+            include_comments: bool,
+            content_format: ContentFormat,
+            ocr_languages: Optional[str] = None,
+            keep_markdown_format: Optional[bool] = False,
+            keep_newlines: bool = False,
     ) -> Iterator[Document]:
         """Process a list of pages into a list of documents."""
         for page in pages:
@@ -486,14 +490,14 @@ class ConfluenceLoader(BaseLoader):
             )
 
     def process_page(
-        self,
-        page: dict,
-        include_attachments: bool,
-        include_comments: bool,
-        content_format: ContentFormat,
-        ocr_languages: Optional[str] = None,
-        keep_markdown_format: Optional[bool] = False,
-        keep_newlines: bool = False,
+            self,
+            page: dict,
+            include_attachments: bool,
+            include_comments: bool,
+            content_format: ContentFormat,
+            ocr_languages: Optional[str] = None,
+            keep_markdown_format: Optional[bool] = False,
+            keep_newlines: bool = False,
     ) -> Document:
         if keep_markdown_format:
             try:
@@ -558,9 +562,9 @@ class ConfluenceLoader(BaseLoader):
         )
 
     def process_attachment(
-        self,
-        page_id: str,
-        ocr_languages: Optional[str] = None,
+            self,
+            page_id: str,
+            ocr_languages: Optional[str] = None,
     ) -> List[str]:
         try:
             from PIL import Image  # noqa: F401
@@ -581,14 +585,14 @@ class ConfluenceLoader(BaseLoader):
                 if media_type == "application/pdf":
                     text = title + self.process_pdf(absolute_url, ocr_languages)
                 elif (
-                    media_type == "image/png"
-                    or media_type == "image/jpg"
-                    or media_type == "image/jpeg"
+                        media_type == "image/png"
+                        or media_type == "image/jpg"
+                        or media_type == "image/jpeg"
                 ):
                     text = title + self.process_image(absolute_url, ocr_languages)
                 elif (
-                    media_type == "application/vnd.openxmlformats-officedocument"
-                    ".wordprocessingml.document"
+                        media_type == "application/vnd.openxmlformats-officedocument"
+                                      ".wordprocessingml.document"
                 ):
                     text = title + self.process_doc(absolute_url)
                 elif media_type == "application/vnd.ms-excel":
@@ -608,9 +612,9 @@ class ConfluenceLoader(BaseLoader):
         return texts
 
     def process_pdf(
-        self,
-        link: str,
-        ocr_languages: Optional[str] = None,
+            self,
+            link: str,
+            ocr_languages: Optional[str] = None,
     ) -> str:
         try:
             import pytesseract
@@ -625,9 +629,9 @@ class ConfluenceLoader(BaseLoader):
         text = ""
 
         if (
-            response.status_code != 200
-            or response.content == b""
-            or response.content is None
+                response.status_code != 200
+                or response.content == b""
+                or response.content is None
         ):
             return text
         try:
@@ -636,15 +640,18 @@ class ConfluenceLoader(BaseLoader):
             return text
 
         for i, image in enumerate(images):
-            image_text = pytesseract.image_to_string(image, lang=ocr_languages)
+            if self.use_openai:
+                image_text = self.image_to_string(image, lang=ocr_languages)
+            else:
+                image_text = pytesseract.image_to_string(image, lang=ocr_languages)
             text += f"Page {i + 1}:\n{image_text}\n\n"
 
         return text
 
     def process_image(
-        self,
-        link: str,
-        ocr_languages: Optional[str] = None,
+            self,
+            link: str,
+            ocr_languages: Optional[str] = None,
     ) -> str:
         try:
             import pytesseract
@@ -659,17 +666,20 @@ class ConfluenceLoader(BaseLoader):
         text = ""
 
         if (
-            response.status_code != 200
-            or response.content == b""
-            or response.content is None
+                response.status_code != 200
+                or response.content == b""
+                or response.content is None
         ):
             return text
         try:
             image = Image.open(BytesIO(response.content))
         except OSError:
             return text
-
-        return pytesseract.image_to_string(image, lang=ocr_languages)
+        if self.use_openai:
+            image_text = self.image_to_string(image, lang=ocr_languages)
+        else:
+            image_text = pytesseract.image_to_string(image, lang=ocr_languages)
+        return image_text
 
     def process_doc(self, link: str) -> str:
         try:
@@ -683,9 +693,9 @@ class ConfluenceLoader(BaseLoader):
         text = ""
 
         if (
-            response.status_code != 200
-            or response.content == b""
-            or response.content is None
+                response.status_code != 200
+                or response.content == b""
+                or response.content is None
         ):
             return text
         file_data = BytesIO(response.content)
@@ -714,9 +724,9 @@ class ConfluenceLoader(BaseLoader):
         text = ""
 
         if (
-            response.status_code != 200
-            or response.content == b""
-            or response.content is None
+                response.status_code != 200
+                or response.content == b""
+                or response.content is None
         ):
             return text
 
@@ -726,7 +736,7 @@ class ConfluenceLoader(BaseLoader):
         file_extension = os.path.splitext(filename)[1]
 
         if file_extension.startswith(
-            ".csv"
+                ".csv"
         ):  # if the extension found in the url is ".csv"
             content_string = response.content.decode("utf-8")
             df = pd.read_csv(io.StringIO(content_string))
@@ -744,9 +754,9 @@ class ConfluenceLoader(BaseLoader):
         return text
 
     def process_svg(
-        self,
-        link: str,
-        ocr_languages: Optional[str] = None,
+            self,
+            link: str,
+            ocr_languages: Optional[str] = None,
     ) -> str:
         try:
             import pytesseract
@@ -763,9 +773,9 @@ class ConfluenceLoader(BaseLoader):
         text = ""
 
         if (
-            response.status_code != 200
-            or response.content == b""
-            or response.content is None
+                response.status_code != 200
+                or response.content == b""
+                or response.content is None
         ):
             return text
 
@@ -775,5 +785,57 @@ class ConfluenceLoader(BaseLoader):
         renderPM.drawToFile(drawing, img_data, fmt="PNG")
         img_data.seek(0)
         image = Image.open(img_data)
+        if self.use_openai:
+            image_text = self.image_to_string(image, lang=ocr_languages)
+        else:
+            image_text = pytesseract.image_to_string(image, lang=ocr_languages)
+        return image_text
 
-        return pytesseract.image_to_string(image, lang=ocr_languages)
+    def image_to_string(self, image, lang: Optional[str] = 'en') -> str:
+        try:
+            import base64
+        except ImportError:
+            raise ImportError("`base64` package not found, please run `pip install base64`")
+        try:
+            import cStringIO
+        except ImportError:
+            raise ImportError("`cStringIO` package not found, please run `pip install cStringIO`")
+
+        buffer = cStringIO.StringIO()
+        image.save(buffer, format="JPEG")
+        base64_image = base64.b64encode(buffer.getvalue())
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.openai_api_key}"
+        }
+
+        payload = {
+            "model": "gpt-4o",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": f"""Describe the image with as much detail as possible. Give me the description 
+                            in the following language: {lang}"""
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image},", "detail": "high"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "max_tokens": 300
+        }
+        try:
+            response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+        except requests.exceptions.RequestException as e:
+            raise SystemExit(e)
+        if response.status_code != 200:
+            raise ValueError(f"Failed to get response from OpenAI API: {response.status_code}")
+        return response.json()["choices"][0]["message"]["content"]
